@@ -349,7 +349,7 @@ async function showLiveLyrics(client, channel, player, config) {
 
   // ===== LYRICS UPDATE INTERVAL =====
   // Set this close to your PlayerPos(ms) update frequency from Kazagumo logs
-  const LYRICS_INTERVAL_MS = 5000; // Example: if PlayerPos updates approx every 5s
+  const LYRICS_INTERVAL_MS = 4500; // Example: if PlayerPos updates approx every 5s
   // =================================
 
   if (lines.length > 0) {
