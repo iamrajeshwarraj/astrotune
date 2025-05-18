@@ -398,7 +398,7 @@ async function showLiveLyrics(
   }
 
   let lyricsInterval = null;
-  const LYRIC_OFFSET_MS = -500;
+  const LYRIC_OFFSET_MS = -4500;
 
   const updateLyrics = async () => {
     if (
@@ -564,7 +564,7 @@ async function showLiveLyrics(
     }
   };
 
-  const LYRICS_INTERVAL_MS = 750;
+  const LYRICS_INTERVAL_MS = 4500;
 
   if (lines.length > 0) {
     lyricsInterval = setInterval(updateLyrics, LYRICS_INTERVAL_MS);
@@ -755,7 +755,7 @@ module.exports = {
   permissions: ["EmbedLinks", "SendMessages"],
   player: true,
   queue: true,
-  inVoiceChannel: false,
+  inVoiceChannel: true,
   sameVoiceChannel: false,
   execute: async (client, message, args, commandName, prefix, db, config) => {
     const player = client.manager.players.get(message.guild.id);
