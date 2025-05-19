@@ -6,154 +6,235 @@
  */
 
 const { AttachmentBuilder } = require("discord.js");
-const genButtons = require("@gen/playerButtons.js");
+const genButtons = require("@gen/playerButtons.js"); 
 const { createCanvas, loadImage, registerFont } = require("canvas");
-registerFont(`${process.cwd()}/assets/fonts/alka.ttf`, {
-  family: "customFont",
-});
+
+// Ensure the font path is correct relative to where your bot process runs
+try {
+    registerFont(`${process.cwd()}/assets/fonts/alka.ttf`, { // Main font
+        family: "customFont",
+    });
+    registerFont(`${process.cwd()}/assets/fonts/whitney.ttf`, { // Example: A common Discord-like bold font
+        family: "WhitneyBold",
+    });
+    registerFont(`${process.cwd()}/assets/fonts/whitney.ttf`, { // Example: A common Discord-like medium font
+        family: "WhitneyMedium",
+    });
+} catch (fontError) {
+    console.error(`[Card1Preset] Failed to register font(s): ${fontError.message}.`);
+}
+
 
 module.exports = async (data, client, player) => {
-  const color = "#aaaaaa";
-  const title = data.title;
-  const author = data.author;
-  const duration = data.duration;
-  const thumbnail = data.thumbnail;
-  const progress = data.progress;
+  const baseColor = data.color || client.color || client.config?.FUEGO?.COLOR || client.config?.EMBED_COLOR || "#fae50a"; 
+  const title = data.title || "Unknown Title";
+  const author = data.author || "Unknown Artist";
+  const duration = data.duration || "00:00";
+  const thumbnailURL = data.thumbnail; 
+  const progress = data.progress || 0;
+  const requester = data.requester; 
+  const sourceName = data.source || "Unknown";
 
-  const Jimp = require("jimp");
-  const image = await Jimp.read(thumbnail);
-  let thumbnailBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
+  let botLogoImage = null;
+  try {
+      botLogoImage = await loadImage(`${process.cwd()}/assets/cards/input_file_0.png`); // Adjust path if logo is elsewhere
+  } catch (e) {
+      console.warn(`[Card1Preset] Bot logo  not found or failed to load: ${e.message}`);
+  }
 
-  const background = await loadImage(
-    `${process.cwd()}/assets/cards/cardBg1.png`,
-  );
-  const thumbnailImage = await loadImage(thumbnailBuffer);
+  let thumbnailBuffer;
+  let jimpError = false;
+  try {
+    if (!thumbnailURL) throw new Error("Thumbnail URL is missing.");
+    const Jimp = require("jimp"); 
+    const image = await Jimp.read(thumbnailURL); 
+    await image.cover(500, 500, Jimp.HORIZONTAL_ALIGN_CENTER | Jimp.VERTICAL_ALIGN_MIDDLE); 
+    await image.quality(85);
+    thumbnailBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
+  } catch (e) {
+    console.error(`[Card1Preset] Jimp/Thumbnail processing error: ${e.message}.`);
+    jimpError = true;
+  }
 
-  const thumbnailCanvas = createCanvas(564, 564);
-  const thumbnailCtx = thumbnailCanvas.getContext("2d");
-  const thumbnailSize = Math.min(thumbnailImage.width, thumbnailImage.height);
-  const cornerRadius2 = 45;
-
-  thumbnailCtx.beginPath();
-  thumbnailCtx.moveTo(0 + cornerRadius2, 0);
-  thumbnailCtx.arcTo(
-    thumbnailCanvas.width,
-    0,
-    thumbnailCanvas.width,
-    thumbnailCanvas.height,
-    cornerRadius2,
-  );
-  thumbnailCtx.arcTo(
-    thumbnailCanvas.width,
-    thumbnailCanvas.height,
-    0,
-    thumbnailCanvas.height,
-    cornerRadius2,
-  );
-  thumbnailCtx.arcTo(0, thumbnailCanvas.height, 0, 0, cornerRadius2);
-  thumbnailCtx.arcTo(0, 0, thumbnailCanvas.width, 0, cornerRadius2);
-  thumbnailCtx.closePath();
-  thumbnailCtx.clip();
-
-  thumbnailCtx.drawImage(
-    thumbnailImage,
-    (thumbnailImage.width - thumbnailSize) / 2,
-    (thumbnailImage.height - thumbnailSize) / 2,
-    thumbnailSize,
-    thumbnailSize,
-    0,
-    0,
-    thumbnailCanvas.width,
-    thumbnailCanvas.height,
-  );
-
-  const progressBarWidth = (parseFloat(progress) / 100) * 670;
-  const progressBarCanvas = createCanvas(670, 25);
-  const progressBarCtx = progressBarCanvas.getContext("2d");
-  const cornerRadius = 10;
-
-  progressBarCtx.beginPath();
-  progressBarCtx.moveTo(cornerRadius, 0);
-  progressBarCtx.lineTo(670 - cornerRadius, 0);
-  progressBarCtx.arcTo(670, 0, 670, 25, cornerRadius);
-  progressBarCtx.lineTo(670, 25 - cornerRadius);
-  progressBarCtx.arcTo(670, 25, 670 - cornerRadius, 25, cornerRadius);
-  progressBarCtx.lineTo(cornerRadius, 25);
-  progressBarCtx.arcTo(0, 25, 0, cornerRadius, cornerRadius);
-  progressBarCtx.lineTo(0, cornerRadius);
-  progressBarCtx.arcTo(0, 0, cornerRadius, 0, cornerRadius);
-  progressBarCtx.closePath();
-  progressBarCtx.fillStyle = "#ababab";
-  progressBarCtx.fill();
-
-  progressBarCtx.beginPath();
-  progressBarCtx.moveTo(cornerRadius, 0);
-  progressBarCtx.lineTo(progressBarWidth - cornerRadius, 0);
-  progressBarCtx.arcTo(progressBarWidth, 0, progressBarWidth, 25, cornerRadius);
-  progressBarCtx.lineTo(progressBarWidth, 25);
-  progressBarCtx.lineTo(cornerRadius, 25);
-  progressBarCtx.arcTo(0, 25, 0, cornerRadius, cornerRadius);
-  progressBarCtx.lineTo(0, cornerRadius);
-  progressBarCtx.arcTo(0, 0, cornerRadius, 0, cornerRadius);
-  progressBarCtx.closePath();
-  progressBarCtx.fillStyle = color;
-  progressBarCtx.fill();
-
-  const circleCanvas = createCanvas(1000, 1000);
-  const circleCtx = circleCanvas.getContext("2d");
-
-  const circleRadius = 25;
-  const circleY = 97;
-  const circleX = progressBarWidth + 60;
-
-  circleCtx.beginPath();
-  circleCtx.arc(circleX, circleY, circleRadius, 0, 2 * Math.PI);
-  circleCtx.fillStyle = color;
-  circleCtx.fill();
-
-  const card = createCanvas(1280, 450);
+  const cardWidth = 1280;
+  const cardHeight = 450;
+  const card = createCanvas(cardWidth, cardHeight);
   const ctx = card.getContext("2d");
 
-  ctx.drawImage(background, 0, 0, 1280, 450);
-  ctx.drawImage(thumbnailCanvas, 837, 8, 435, 435);
-  ctx.drawImage(progressBarCanvas, 70, 340, 670, 25);
-  ctx.drawImage(circleCanvas, 10, 255, 1000, 1000);
+  try {
+    const background = await loadImage(`${process.cwd()}/assets/cards/cardBg1.png`);
+    ctx.drawImage(background, 0, 0, cardWidth, cardHeight);
+  } catch (e) {
+    console.warn(`[Card1Preset] Failed to load background image, using solid color. ${e.message}`);
+    ctx.fillStyle = "#23272A"; 
+    ctx.fillRect(0, 0, cardWidth, cardHeight);
+  }
+  
+  const thumbSize = 380; 
+  const thumbX = cardWidth - thumbSize - 35; 
+  const thumbY = (cardHeight - thumbSize) / 2;
+  const cornerRadiusThumb = 35;
 
+  if (thumbnailBuffer && !jimpError) {
+    try {
+        const thumbnailImage = await loadImage(thumbnailBuffer);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(thumbX + cornerRadiusThumb, thumbY);
+        ctx.lineTo(thumbX + thumbSize - cornerRadiusThumb, thumbY);
+        ctx.arcTo(thumbX + thumbSize, thumbY, thumbX + thumbSize, thumbY + cornerRadiusThumb, cornerRadiusThumb);
+        ctx.lineTo(thumbX + thumbSize, thumbY + thumbSize - cornerRadiusThumb);
+        ctx.arcTo(thumbX + thumbSize, thumbY + thumbSize, thumbX + thumbSize - cornerRadiusThumb, thumbY + thumbSize, cornerRadiusThumb);
+        ctx.lineTo(thumbX + cornerRadiusThumb, thumbY + thumbSize);
+        ctx.arcTo(thumbX, thumbY + thumbSize, thumbX, thumbY + thumbSize - cornerRadiusThumb, cornerRadiusThumb);
+        ctx.lineTo(thumbX, thumbY + cornerRadiusThumb);
+        ctx.arcTo(thumbX, thumbY, thumbX + cornerRadiusThumb, thumbY, cornerRadiusThumb);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(thumbnailImage, thumbX, thumbY, thumbSize, thumbSize);
+        ctx.restore();
+    } catch (e) {
+        console.error(`[Card1Preset] Failed to draw thumbnail: ${e.message}`);
+    }
+  } else if (thumbnailURL && !jimpError) { 
+      try {
+        const fallbackThumb = await loadImage(thumbnailURL);
+        // Draw fallback with rounded corners too for consistency
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(thumbX + cornerRadiusThumb, thumbY);
+        ctx.lineTo(thumbX + thumbSize - cornerRadiusThumb, thumbY);
+        ctx.arcTo(thumbX + thumbSize, thumbY, thumbX + thumbSize, thumbY + cornerRadiusThumb, cornerRadiusThumb);
+        ctx.lineTo(thumbX + thumbSize, thumbY + thumbSize - cornerRadiusThumb);
+        ctx.arcTo(thumbX + thumbSize, thumbY + thumbSize, thumbX + thumbSize - cornerRadiusThumb, thumbY + thumbSize, cornerRadiusThumb);
+        ctx.lineTo(thumbX + cornerRadiusThumb, thumbY + thumbSize);
+        ctx.arcTo(thumbX, thumbY + thumbSize, thumbX, thumbY + thumbSize - cornerRadiusThumb, cornerRadiusThumb);
+        ctx.lineTo(thumbX, thumbY + cornerRadiusThumb);
+        ctx.arcTo(thumbX, thumbY, thumbX + cornerRadiusThumb, thumbY, cornerRadiusThumb);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(fallbackThumb, thumbX, thumbY, thumbSize, thumbSize);
+        ctx.restore();
+      } catch (e) { console.error(`[Card1Preset] Failed to draw fallback thumbnail: ${e.message}`);}
+  }
+
+  const textAreaX = 40;
+  const textAreaWidth = cardWidth - thumbSize - textAreaX - 80; 
+
+  ctx.fillStyle = baseColor; 
+  ctx.font = "bold 60px WhitneyBold, customFont, sans-serif"; 
   ctx.textAlign = "left";
-  ctx.fillStyle = color;
-  ctx.font = "60px customFont";
-  ctx.fillText(title, 40, 100, 747);
+  ctx.fillText(title, textAreaX, 100, textAreaWidth);
 
-  ctx.font = "40px customFont";
-  ctx.fillStyle = "white";
-  ctx.fillText("Music by - " + author, 40, 170, 500);
+  ctx.fillStyle = "#DCDEF1"; 
+  ctx.font = "45px WhitneyMedium, customFont, sans-serif";
+  ctx.fillText(author, textAreaX, 170, textAreaWidth);
+  
+  if (requester) {
+    const requesterName = typeof requester === 'string' ? (client.users.cache.get(requester)?.username || "Unknown User") : (requester.username || "Unknown User");
+    ctx.fillStyle = "#B0B8BF"; 
+    ctx.font = "30px WhitneyMedium, customFont, sans-serif";
+    ctx.fillText(`Requested by: ${requesterName}`, textAreaX, 220, textAreaWidth);
+  }
 
-  const gradient = ctx.createLinearGradient(500, 10, 800, 0);
-  gradient.addColorStop(0, "#fa1982");
-  gradient.addColorStop(1, "#faf600");
-  ctx.fillStyle = gradient;
-  ctx.textAlign = "right";
-  ctx.font = "bold 35px customFont";
-  ctx.fillText("- Nexus", 787, 240);
+  // --- Progress Bar (MOVED UP) ---
+  const progressBarTotalWidth = textAreaWidth - 20; 
+  const progressBarHeight = 20; 
+  const progressBarX = textAreaX;
+  const progressBarY = cardHeight - 140; // MOVED UP (was cardHeight - 100)
+  const currentProgressWidth = Math.max(0, (parseFloat(progress) / 100) * progressBarTotalWidth);
+  const cornerRadiusProgress = progressBarHeight / 2;
 
-  ctx.fillStyle = "white";
-  ctx.font = "bold 30px customFont";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.2)"; 
+  ctx.beginPath();
+  ctx.moveTo(progressBarX + cornerRadiusProgress, progressBarY);
+  ctx.lineTo(progressBarX + progressBarTotalWidth - cornerRadiusProgress, progressBarY);
+  ctx.arcTo(progressBarX + progressBarTotalWidth, progressBarY, progressBarX + progressBarTotalWidth, progressBarY + progressBarHeight, cornerRadiusProgress);
+  ctx.lineTo(progressBarX + progressBarTotalWidth, progressBarY + progressBarHeight - cornerRadiusProgress);
+  ctx.arcTo(progressBarX + progressBarTotalWidth, progressBarY + progressBarHeight, progressBarX + progressBarTotalWidth - cornerRadiusProgress, progressBarY + progressBarHeight, cornerRadiusProgress);
+  ctx.lineTo(progressBarX + cornerRadiusProgress, progressBarY + progressBarHeight);
+  ctx.arcTo(progressBarX, progressBarY + progressBarHeight, progressBarX, progressBarY + progressBarHeight - cornerRadiusProgress, cornerRadiusProgress);
+  ctx.lineTo(progressBarX, progressBarY + cornerRadiusProgress);
+  ctx.arcTo(progressBarX, progressBarY, progressBarX + cornerRadiusProgress, progressBarY, cornerRadiusProgress);
+  ctx.closePath();
+  ctx.fill();
+
+  if (currentProgressWidth > 0) {
+    ctx.fillStyle = baseColor;
+    ctx.beginPath();
+    const effectiveBarWidth = Math.max(currentProgressWidth, cornerRadiusProgress * 2); 
+    ctx.moveTo(progressBarX + cornerRadiusProgress, progressBarY);
+    ctx.lineTo(progressBarX + effectiveBarWidth - cornerRadiusProgress, progressBarY);
+    if (effectiveBarWidth > cornerRadiusProgress) { 
+        ctx.arcTo(progressBarX + effectiveBarWidth, progressBarY, progressBarX + effectiveBarWidth, progressBarY + progressBarHeight, cornerRadiusProgress);
+        ctx.lineTo(progressBarX + effectiveBarWidth, progressBarY + progressBarHeight - cornerRadiusProgress);
+        ctx.arcTo(progressBarX + effectiveBarWidth, progressBarY + progressBarHeight, progressBarX + effectiveBarWidth - cornerRadiusProgress, progressBarY + progressBarHeight, cornerRadiusProgress);
+    } else { 
+        ctx.lineTo(progressBarX + effectiveBarWidth, progressBarY + progressBarHeight); // Simplified for very short progress
+    }
+    ctx.lineTo(progressBarX + cornerRadiusProgress, progressBarY + progressBarHeight);
+    ctx.arcTo(progressBarX, progressBarY + progressBarHeight, progressBarX, progressBarY + progressBarHeight - cornerRadiusProgress, cornerRadiusProgress);
+    ctx.lineTo(progressBarX, progressBarY + cornerRadiusProgress);
+    ctx.arcTo(progressBarX, progressBarY, progressBarX + cornerRadiusProgress, progressBarY, cornerRadiusProgress);
+    ctx.closePath();
+    ctx.fill();
+  }
+  
+  const circleRadius = progressBarHeight / 1.5; // Slightly larger circle for better visibility
+  const circleY = progressBarY + progressBarHeight / 2; 
+  const circleX = progressBarX + Math.max(circleRadius, Math.min(currentProgressWidth, progressBarTotalWidth - circleRadius)); // Clamp circle X within bar bounds
+
+  ctx.beginPath();
+  ctx.arc(circleX, circleY, circleRadius, 0, 2 * Math.PI);
+  ctx.fillStyle = baseColor;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(circleX, circleY, circleRadius, 0, 2 * Math.PI);
+  ctx.strokeStyle = "rgba(0,0,0,0.3)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Time Stamps (MOVED UP with progress bar)
+  const timeY = progressBarY + progressBarHeight + 30; // Adjusted spacing from bar
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = "bold 28px WhitneyBold, customFont, sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText("00.00", 70, 410);
+  const currentTimeFormatted = client.formatTime ? client.formatTime(player?.position || 0) : "0:00";
+  ctx.fillText(currentTimeFormatted, progressBarX, timeY);
 
-  ctx.fillStyle = "white";
-  ctx.font = "bold 30px customFont";
   ctx.textAlign = "right";
-  ctx.fillText(duration, 740, 410);
+  ctx.fillText(duration, progressBarX + progressBarTotalWidth, timeY);
+
+  // --- Bot Logo and Footer (MOVED UP) ---
+  const footerY = cardHeight - 30; 
+  if (botLogoImage) {
+    const logoSize = 40;
+    ctx.drawImage(botLogoImage, textAreaX, footerY - logoSize + 5 , logoSize, logoSize); 
+    ctx.fillStyle = "#B0B8BF";
+    ctx.font = "24px WhitneyMedium, customFont, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(client.user.username, textAreaX + logoSize + 10, footerY); 
+  } else { 
+    ctx.fillStyle = "#B0B8BF";
+    ctx.font = "24px WhitneyMedium, customFont, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(`Playing on ${client.user.username}`, textAreaX, footerY); 
+  }
+  
+  ctx.fillStyle = "#B0B8BF";
+  ctx.font = "italic 24px WhitneyMedium, customFont, sans-serif";
+  ctx.textAlign = "right";
+  const sourceNameX = cardWidth - 35; // Position from right edge of card
+  const sourceNameMaxWidth = textAreaWidth - (botLogoImage ? (textAreaX + 40 + 10 + ctx.measureText(client.user.username).width + 20) : (textAreaX + ctx.measureText(`Playing on ${client.user.username}`).width + 20));
+  ctx.fillText(`via ${sourceName}`, sourceNameX , footerY, sourceNameMaxWidth > 50 ? sourceNameMaxWidth : undefined);
+
 
   const buffer = card.toBuffer("image/png");
+  const attachment = new AttachmentBuilder(buffer, { name: "nowplaying_card.png" });
+  
+  const embedInstance = new client.embed(baseColor); 
+  embedInstance
+    .setImage(`attachment://${attachment.name}`); // Only image in the embed
 
-  const attachment = new AttachmentBuilder(buffer, {
-    name: "card.png",
-  });
-  const embed = new client.embed()
-    .setTitle(`${client.user.username} is currently playing :\n`)
-    .img(`attachment://${attachment.name}`);
-
-  return [[embed], [attachment], [genButtons(client, player)[0]]];
+  return [[embedInstance], [attachment], [genButtons(client, player)[0]]]; 
 };
