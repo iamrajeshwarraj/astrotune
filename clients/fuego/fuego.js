@@ -1,23 +1,24 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
+// clients/fuego/fuego.js
+/** @format ... */
 
-const YML = require("js-yaml").load(
-  require("fs").readFileSync("./config.yml", "utf8"),
-);
-const bot = require("../../main/extendedClient");
+require("module-alias/register"); 
+const path = require("path");
 
-const client = new bot();
-require("@utils/antiCrash")(client);
+const ExtendedClient = require(path.resolve(__dirname, "../../main/extendedClient.js")); 
+
+const client = new ExtendedClient(); 
+
+require("@utils/antiCrash.js")(client); 
+
+const fuegoconfig = client.config.FUEGO || {}; 
+
 client.connect(
-  YML.FUEGO.TOKEN,
-  YML.FUEGO.PREFIX,
-  YML.FUEGO.EMOJIS,
-  YML.FUEGO.COLOR,
-  YML.FUEGO.TOPGGAUTH,
-  YML.FUEGO.VOTEURI,
+  fuegoconfig.TOKEN,
+  fuegoconfig.PREFIX,
+  fuegoconfig.EMOJIS,
+  fuegoconfig.COLOR,
+  fuegoconfig.TOPGGAUTH,
+  fuegoconfig.VOTEURI
 );
-module.exports = client;
+
+module.exports = client; 

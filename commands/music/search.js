@@ -1,209 +1,208 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
+// commands/music/search.js
+/** @format ... */
 
-const { ActionRowBuilder, StringSelectMenuBuilder } = require("discord.js");
-const yt =
-  /^(?:(?:(?:https?:)?\/\/)?(?:www\.)?)?(?:youtube\.com\/(?:[^\/\s]+\/\S+\/|(?:c|channel|user)\/\S+|embed\/\S+|watch\?(?=.*v=\S+)(?:\S+&)*v=\S+)|(?:youtu\.be\/\S+)|yt:\S+)$/i;
+const { ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder } = require("discord.js"); 
+const yt = /^(?:(?:(?:https?:)?\/\/)?(?:www\.)?)?(?:youtube\.com\/(?:[^\/\s]+\/\S+\/|(?:c|channel|user)\/\S+|embed\/\S+|watch\?(?=.*v=\S+)(?:\S+&)*v=\S+)|(?:youtu\.be\/\S+)|yt:\S+)$/i;
+const sp = /^(?:https?:)?\/\/(?:open|play)\.spotify\.com\/(?:user\/\S+\/playlist\/\S+|track\/\S+|album\/\S+|artist\/\S+)/i;
 
 module.exports = {
   name: "search",
   aliases: ["sr"],
-  cooldown: "",
+  cooldown: 5, 
   category: "music",
-  usage: "",
-  description: "search some song",
+  usage: "<song name>",
+  description: "Searches for songs on Spotify, YouTube, and YouTube Music.",
   args: true,
-  vote: false,
-  new: true,
-  admin: false,
-  owner: false,
-  botPerms: [],
-  userPerms: [],
-  player: false,
+  player: false, 
   queue: false,
   inVoiceChannel: true,
   sameVoiceChannel: true,
   execute: async (client, message, args, emoji) => {
     const { channel } = message.member.voice;
-
     const query = args.join(" ");
 
-    if (yt.test(query)) {
-      return await message
-        .reply({
-          embeds: [
-            new client.embed().desc(
-              `${emoji.warn} **This provider is against ToS!**`,
-            ),
-          ],
-        })
-        .catch(() => {});
+    if (yt.test(query) || sp.test(query)) { 
+      return message.reply({
+          embeds: [ new client.embed(client.color).desc(`${emoji.warn} **Please use the \`${client.prefix}play\` command for direct links.**`) ],
+        }).catch(() => {});
     }
 
-    const loading = {
-      embeds: [
-        new client.embed().desc(
-          `${emoji.search} **Searching please wait. . . **`,
-        ),
-      ],
-    };
+    let replyMessage = null;
+    try {
+        replyMessage = await message.reply({ embeds: [new client.embed(client.color).desc(`${emoji.search} **Searching multiple platforms...**`)] });
+    } catch(e) { client.log(`SearchCmd: Failed to send initial reply: ${e.message}`, "warn");}
 
-    let x = await message.reply(loading).catch(() => {});
+    let player = client.manager.players.get(message.guild.id);
+    if (!player) {
+      try {
+        player = await client.manager.createPlayer({
+          voiceId: channel.id, textId: message.channel.id, guildId: message.guild.id,
+          shardId: message.guild.shardId, loadBalancer: true, deaf: true,
+        });
+      } catch (playerError) { 
+        client.log(`SearchCmd: Error creating player: ${playerError.message}`, "error");
+        const errEmbed = new client.embed(client.color).error(`Could not create music player: ${playerError.message}`);
+        if (replyMessage) return replyMessage.edit({ embeds: [errEmbed] }).catch(() => {});
+        return message.channel.send({ embeds: [errEmbed] }).catch(() => {});
+      }
+    }
+    
+    const searchOptions = { requester: message.author, limit: 7 }; 
+    let allResults = [];
+    const defaultSearchEngine = client.config.FUEGO?.DEFAULT_SEARCH_ENGINE || "ytmsearch";
+    // Ensure your emoji object has these keys (e.g., client.emoji.spotify) 
+    // and they are valid full custom emoji strings like <:name:id> or Unicode characters.
+    let searchSources = [
+        { engine: "spotify", name: "Spotify", emojiString: client.emoji?.spotify || "<:Spotify:1308549107677134878>" }, 
+        { engine: "ytmsearch", name: "YouTube Music", emojiString: client.emoji?.ytmsearch || "<:y_youtube:1308548668726579293>" },
+        { engine: "youtube", name: "YouTube", emojiString: client.emoji?.youtube || "<:y_youtube:1308548668726579293>" }
+    ];
+    
+    if (replyMessage) await replyMessage.edit({embeds: [new client.embed(client.color).desc(`${emoji.search} Searching on: ${searchSources.map(s=>s.name).join(', ')}...`)]}).catch(()=>{});
 
-    const player = await client.manager.createPlayer({
-      voiceId: channel.id,
-      textId: message.channel.id,
-      guildId: message.guild.id,
-      shardId: message.guild.shardId,
-      loadBalancer: true,
-      deaf: true,
+    for (const source of searchSources) {
+        try {
+            // client.log(`SearchCmd: Searching ${source.name} for: "${query}"`, "debug");
+            const result = await player.search(query, { ...searchOptions, engine: source.engine });
+            if (result && result.tracks.length > 0) {
+                result.tracks.slice(0, searchOptions.limit).forEach(track => {
+                    track.userData = { 
+                        ...track.userData, 
+                        sourceNameForDisplay: source.name, 
+                        sourceIcon: source.emojiString 
+                    };
+                    if (source.engine === "spotify") { 
+                        track.userData.spotifyTitle = track.title;
+                        track.userData.spotifyAuthor = track.author;
+                        track.userData.spotifyDuration = track.length;
+                    }
+                    allResults.push(track);
+                });
+            }
+        } catch (error) {
+            client.log(`SearchCmd: Error searching ${source.name} for "${query}": ${error.message}`, "warn");
+        }
+    }
+
+    const noResEmbed = new client.embed(client.color).desc(`${emoji.no} **No results found for your query on any platform.**`);
+    if (allResults.length === 0) {
+      if (replyMessage) return replyMessage.edit({ embeds: [noResEmbed] }).catch(() => {});
+      return message.channel.send({ embeds: [noResEmbed] }).catch(() => {});
+    }
+
+    const tracksToDisplay = allResults.slice(0, 25); 
+
+    const options = tracksToDisplay.map((track, index) => {
+        const displayTitle = track.userData?.spotifyTitle || track.title;
+        const displayAuthor = track.userData?.spotifyAuthor || track.author;
+        const sourceIconEmoji = track.userData?.sourceIcon || "🎶"; 
+        const durationText = track.isStream ? "◉ LIVE" : client.formatTime(track.length);
+
+        let labelText = displayTitle;
+        if (labelText.length > 95) labelText = labelText.substring(0, 92) + "..."; 
+        
+        let descriptionText = `By: ${displayAuthor} | ${durationText}`;
+        if (descriptionText.length > 95) {
+            const authorMax = 95 - (`By:  | ${durationText}`).length - 3;
+            const truncatedAuthor = displayAuthor.substring(0, Math.max(10, authorMax));
+            descriptionText = `By: ${truncatedAuthor}${displayAuthor.length > truncatedAuthor.length ? '...' : ''} | ${durationText}`;
+            if (descriptionText.length > 95) descriptionText = durationText.substring(0, 95) + (durationText.length > 95 ? "..." : "");
+        }
+
+        const option = new StringSelectMenuOptionBuilder()
+            .setLabel(labelText)
+            .setValue(`${index}`) 
+            .setDescription(descriptionText);
+        
+        const customEmojiMatch = sourceIconEmoji.match(/<a?:[^:]+:(\d+)>$/); // Matches <:name:id> or <a:name:id>
+        if (customEmojiMatch && customEmojiMatch[1]) {
+            option.setEmoji(customEmojiMatch[1]); // Use only the ID
+        } else if (!sourceIconEmoji.includes(':') && sourceIconEmoji.length <= 4) { // Likely a Unicode emoji (allow for flags etc)
+            try {
+                option.setEmoji(sourceIconEmoji);
+            } catch (unicodeError) { /* Ignore if it's not a valid Unicode emoji char */ }
+        }        
+        return option;
     });
 
-    const result = {};
-    result.youtube = await player
-      .search(query, {
-        requester: message.author,
-        engine: "youtube",
-      })
-      .then((res) => res.tracks);
-
-    result.spotify = await player
-      .search(query, {
-        requester: message.author,
-       // engine: "spotify",
-      })
-      .then((res) => res.tracks);
-
-    result.soundcloud = await player
-      .search(query, {
-        requester: message.author,
-        engine: "soundcloud",
-      })
-      .then((res) => res.tracks);
-
-    result.tracks = [
-      ...result.youtube.slice(0, 5),
-      ...result.spotify.slice(0, 5),
-      ...result.soundcloud.slice(0, 5),
-    ];
-
-    let noResObj = {
-      embeds: [
-        new client.embed().desc(`${emoji.no} **No results found for query**`),
-      ],
-    };
-
-    if (!result.tracks.length || result.tracks.length == 0)
-      return x
-        ? await x.edit(noResObj).catch(() => {})
-        : await message.reply(noResObj).catch(() => {});
-
-    const tracks = result.tracks;
-
-    const options = await Promise.all(
-      tracks.map(async (track, index) => ({
-        label: `${index} -  ${
-          track.title.charAt(0).toUpperCase() + track.title.substring(1, 30)
-        }`,
-        value: `${index}`,
-        description: `Author: ${track.author.substring(0, 30)}     Duration: ${
-          track?.isStream ? "◉ LIVE" : client.formatTime(track.length)
-        }`,
-        emoji: emoji[track.sourceName],
-      })),
-    );
+    if (options.length === 0) { 
+         if (replyMessage) return replyMessage.edit({ embeds: [noResEmbed] }).catch(() => {});
+         return message.channel.send({ embeds: [noResEmbed] }).catch(() => {});
+    }
 
     const menu = new StringSelectMenuBuilder()
-      .setCustomId("menu")
-      .setPlaceholder("Search results")
+      .setCustomId("search_results_menu_v3") 
+      .setPlaceholder("Select tracks to add (max 5)")
       .setMinValues(1)
-      .setMaxValues(5)
+      .setMaxValues(Math.min(5, options.length)) 
       .addOptions(options);
 
     const row = new ActionRowBuilder().addComponents(menu);
+    const searchEmbed = new client.embed(client.color)
+        .desc(`${emoji.track || '🎵'} **Found ${tracksToDisplay.length} results. Select up to ${menu.data.max_values}.**`)
+        .setFooter({ text: `Query: ${query.substring(0,100)}` });
 
-    let resObj = {
-      embeds: [
-        new client.embed()
-          .desc(`${emoji.track} **Select a track below**`)
-          .setFooter({
-            text: `Powered by ━● Aero-Services | Hard Musicㅤㅤㅤㅤㅤㅤ  ㅤㅤㅤㅤㅤㅤㅤ`,
-          }),
-      ],
-      components: [row],
-    };
+    let selectionMessage;
+    if (replyMessage && !replyMessage.deleted) {
+        selectionMessage = await replyMessage.edit({ embeds: [searchEmbed], components: [row] }).catch(err => {
+            client.log(`SearchCmd: Failed to EDIT replyMessage with results: ${err.message}`, "error");
+            console.error("SearchCmd Edit Error:", err); 
+            return null; 
+          });
+    } else {
+        selectionMessage = await message.channel.send({ embeds: [searchEmbed], components: [row] }).catch(err => {
+            client.log(`SearchCmd: Failed to SEND selectionMessage: ${err.message}`, "error");
+            console.error("SearchCmd Send Error:", err); 
+            return null; 
+          });
+    }
+        
+    if (!selectionMessage) {
+        client.log("SearchCmd: selectionMessage is null after attempting to send/edit. Aborting collector.", "error");
+        return;
+    }
 
-    const m = x
-      ? await x.edit(resObj).catch(() => {})
-      : await message.reply(resObj).catch(() => {});
+    const filter = (interaction) => interaction.user.id === message.author.id;
+    const collector = selectionMessage.createMessageComponentCollector({ filter, time: 60000, idle: 30000 });
 
-    const filter = async (interaction) => {
-      if (interaction.user.id === message.author.id) {
-        return true;
-      }
-      await interaction
-        .reply({
-          embeds: [
-            new client.embed().desc(
-              `${emoji.no} Only **${message.author.tag}** can use this`,
-            ),
-          ],
-          ephemeral: true,
-        })
-        .catch(() => {});
-      return false;
-    };
-    const collector = m?.createMessageComponentCollector({
-      filter: filter,
-      time: 60000,
-      idle: 60000 / 2,
-    });
+    collector.on("collect", async (interaction) => {
+      if (!interaction.isStringSelectMenu()) return; 
+      try { await interaction.deferUpdate(); } catch { return; }
 
-    collector?.on("end", async (collected, reason) => {
-      if (collected.size == 0)
-        await m
-          .edit({
-            embeds: [
-              new client.embed()
-                .desc(`${emoji.warn} **Timeout ! No track selected**`)
-                .setFooter({
-                  text: `Powered by ━● Aero-Services | Hard Musicㅤㅤㅤㅤㅤㅤ  ㅤㅤㅤㅤㅤㅤㅤ`,
-                }),
-            ],
-            components: [],
-          })
-          .catch(() => {});
-    });
+      let addedDesc = "";
+      let actuallyAddedThisInteraction = 0;
 
-    collector?.on("collect", async (interaction) => {
-      if (!interaction.deferred) interaction.deferUpdate();
-      await m?.delete().catch(() => {});
+      for (const value of interaction.values) { 
+        const trackIndex = parseInt(value, 10);
+        const selectedTrack = tracksToDisplay[trackIndex]; 
 
-      let desc = ``;
-      for (const value of interaction.values) {
-        const song = tracks[value];
-        if (song.length < 10000) {
-          desc += `${emoji.no} **Not added as less than 30s [${song.title
-            .replace("[", "")
-            .replace("]", "")
-            .substring(0, 15)}](https://0.0)**\n`;
-          continue;
+        if (selectedTrack) {
+          if (selectedTrack.length < 10000 && !selectedTrack.isStream) { 
+            addedDesc += `${emoji.no || '❌'} **Skipped (short):** [${(selectedTrack.userData?.spotifyTitle || selectedTrack.title).substring(0,30)}...](${selectedTrack.uri || '#'}) \n`;
+            continue;
+          }
+          player.queue.add(selectedTrack); 
+          addedDesc += `${emoji.yes || '✅'} **Added:** [${(selectedTrack.userData?.spotifyTitle || selectedTrack.title).substring(0,30)}...](${selectedTrack.uri || '#'}) \n`;
+          actuallyAddedThisInteraction++;
         }
-        await player.queue.add(song);
-        desc += `${emoji.yes} **Added to queue [${song.title
-          .replace("[", "")
-          .replace("]", "")}](https://0.0)**\n`;
       }
-      await message
-        .reply({
-          embeds: [new client.embed().desc(desc)],
-        })
-        .catch(() => {});
-      if (!player.playing && !player.paused) player.play();
+
+      if (actuallyAddedThisInteraction > 0 && !player.playing && !player.paused && player.queue.current) {
+        player.play();
+      }
+      
+      const finalEmbed = new client.embed(client.color).setDescription(addedDesc || `${emoji.no || '❓'} No valid tracks selected or an issue occurred.`);
+      if (selectionMessage && !selectionMessage.deleted) {
+        await selectionMessage.edit({ embeds: [finalEmbed], components: [] }).catch(() => {}); 
+      }
+      collector.stop("selection_made"); 
+    });
+
+    collector.on("end", async (collected, reason) => {
+      if (reason !== "selection_made" && selectionMessage && !selectionMessage.deleted) { 
+            const timeoutEmbed = new client.embed(client.color).desc(`${emoji.warn || '⚠️'} **Search selection timed out.**`);
+            await selectionMessage.edit({ embeds: [timeoutEmbed], components: [] }).catch(() => {});
+      }
     });
   },
 };

@@ -1,37 +1,52 @@
-# @format
+# config.yml
+BOT:
+  OWNERS: ["1296592612114960415", "1297443880576225312"]
+  ADMINS: ["1296592612114960415", "1297443880576225312"]
 
-BOT: {
-  OWNERS: ["1296592612114960415", "1297443880576225312"],
-  ADMINS: ["1296592612114960415", "1297443880576225312"],
-}
-LINKS: {
-  SUPPORT: "https://discord.gg/gRSHCpqK7u",
-  MONGO_URI: "mongodb+srv://rajeshwarrajbly20:randidadhabha@cluster0.cbs91jy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-}
-SPOTIFY: {
-  ID: "28f83a6fba8b4faf91b55517d450bc91",
-  Secret: "7cc1f33fee2b4bec9fafc7532eed6493",
-}
+LINKS:
+  SUPPORT: "https://discord.gg/gRSHCpqK7u"
+  MONGO_URI: "mongodb+srv://rajeshwarrajbly20:randidadhabha@cluster0.cbs91jy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
-MANAGER: {
-  OWNER: "1297443880576225312",
-  TOKEN: "MTM3MzI0MzIzNTA2NTEzNTEyNA.GYftNC.YI5w832f9ggZUq1_qw90dgZNF6TyS-VXuvKzqo",
-  }
+SPOTIFY: # As read by options.js
+  ID: "8df7bdf3ea154a66bdb788d8b97c60d3"    # Your actual Spotify Client ID
+  Secret: "2b67bd50edcd4ab69fba1524a1cc8918" # Your actual Spotify Client Secret (Note: Capital 'S')
+  # SEARCHMARKET: "IN" # Optional
 
-FUEGO: {
-  PREFIX: "!",
-  EMOJIS: "black",
-  COLOR: "#3d16ca",
-  SHARDS: 1,
-  PER_CLUSTER: 1,
-  TOKEN: "MTM3MzI0MzIzNTA2NTEzNTEyNA.GYftNC.YI5w832f9ggZUq1_qw90dgZNF6TyS-VXuvKzqo",
-  TOPGGAUTH: "",
-      }
+FUEGO: # Settings for your Fuego client
+  CLIENT_NAME: "FuegoBot" # Optional: For logging context
+  TOKEN: "MTM3MzI0MzIzNTA2NTEzNTEyNA.GYftNC.YI5w832f9ggZUq1_qw90dgZNF6TyS-VXuvKzqo" # IMPORTANT
+  PREFIX: "!"
+  EMOJIS: "black" # Or your emoji object key if emoji.js is complex
+  COLOR: "#3d16ca"
+  OWNERS: ["1296592612114960415", "1297443880576225312"] # For JSK and other owner commands
+  JSK_PREFIX: "."
+  JSK_ALIASES: ["jsk", "jishaku"]
+  TOPGGAUTH: "" # If you use Top.gg
+  VOTEURI: ""   # If you have a vote URI
+  SHARDS: "auto"    # For sharder.js
+  PER_CLUSTER: 2  # For sharder.js
+  DEFAULT_SEARCH_ENGINE: "ytmsearch" # youtube, ytmsearch, soundcloud
 
-WEBHOOKS: {
-  ERROR: "https://discord.com/api/webhooks/1308424637142536262/H__6pJ9JOPAuxdQuBfN-UJOjJ1eVKcfqnHUlpkk0VNQvC5EFVmhk-VbmOxsHlUropLnt",
-  STATIC: "https://discord.com/api/webhooks/1308424637142536262/H__6pJ9JOPAuxdQuBfN-UJOjJ1eVKcfqnHUlpkk0VNQvC5EFVmhk-VbmOxsHlUropLnt",
-  PLAYER: "https://discord.com/api/webhooks/1308424637142536262/H__6pJ9JOPAuxdQuBfN-UJOjJ1eVKcfqnHUlpkk0VNQvC5EFVmhk-VbmOxsHlUropLnt",
-  SERVER: "https://discord.com/api/webhooks/1308424637142536262/H__6pJ9JOPAuxdQuBfN-UJOjJ1eVKcfqnHUlpkk0VNQvC5EFVmhk-VbmOxsHlUropLnt",
-  COMMAND: "https://discord.com/api/webhooks/1308424637142536262/H__6pJ9JOPAuxdQuBfN-UJOjJ1eVKcfqnHUlpkk0VNQvC5EFVmhk-VbmOxsHlUropLnt",
-}
+MANAGER: # If you have a separate Manager bot defined in YML (not currently used by sharder example)
+  OWNER: "1297443880576225312"
+  TOKEN: "MTM3MzI0MzIzNTA2NTEzNTEyNA.GYftNC.YI5w832f9ggZUq1_qw90dgZNF6TyS-VXuvKzqo"
+
+WEBHOOKS:
+  ERROR: "https://discord.com/api/webhooks/1308424637142536262/H__6pJ9JOPAuxdQuBfN-UJOjJ1eVKcfqnHUlpkk0VNQvC5EFVmhk-VbmOxsHlUropLnt"
+  STATIC: "https://discord.com/api/webhooks/1308424637142536262/H__6pJ9JOPAuxdQuBfN-UJOjJ1eVKcfqnHUlpkk0VNQvC5EFVmhk-VbmOxsHlUropLnt"
+  PLAYER: "https://discord.com/api/webhooks/1308424637142536262/H__6pJ9JOPAuxdQuBfN-UJOjJ1eVKcfqnHUlpkk0VNQvC5EFVmhk-VbmOxsHlUropLnt"
+  SERVER: "https://discord.com/api/webhooks/1308424637142536262/H__6pJ9JOPAuxdQuBfN-UJOjJ1eVKcfqnHUlpkk0VNQvC5EFVmhk-VbmOxsHlUropLnt"
+  COMMAND: "https://discord.com/api/webhooks/1308424637142536262/H__6pJ9JOPAuxdQuBfN-UJOjJ1eVKcfqnHUlpkk0VNQvC5EFVmhk-VbmOxsHlUropLnt"
+
+NODES:
+  - name: "AstroTune"
+    url: "lavahatry4.techbyte.host:3000"
+    auth: "NAIGLAVA-dash.techbyte.host"
+    secure: false
+  # - name: "MyLocalLava" # Example for local testing
+  #   url: "localhost:2333" 
+  #   auth: "youshallnotpass"
+  #   secure: false
+
+EMBED_COLOR: "#3d16ca" # A general default embed color
+ANIMATE: true # For launcher.js animation

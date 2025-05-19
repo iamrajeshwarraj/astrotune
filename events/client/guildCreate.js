@@ -1,57 +1,64 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
+// events/client/guildCreate.js
+// const { EmbedBuilder } = require('discord.js'); // Not needed if using client.embed
 
 module.exports = {
-  name: "guildCreate",
-  run: async (client, guild) => {
-    if (!guild.name) return;
+    name: 'guildCreate',
+    async run(client, guild) { // Parameters may vary based on your event handler
+        try {
+            client.log(`Joined a new guild: ${guild.name} (ID: ${guild.id}) with ${guild.memberCount} members.`, "event", "GuildEvents");
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////// Send a thank you message to guild owner ///////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
+            // Example: Send a message to a default channel or system channel
+            let defaultChannel = null;
+            if (guild.systemChannel && guild.systemChannel.permissionsFor(guild.members.me).has("SendMessages")) {
+                defaultChannel = guild.systemChannel;
+            } else {
+                defaultChannel = guild.channels.cache.find(
+                    channel => channel.type === 0 && // 0 for GUILD_TEXT
+                               channel.permissionsFor(guild.members.me).has("SendMessages")
+                );
+            }
 
-    const { ActionRowBuilder } = require("discord.js");
-    let desc =
-      `\`${
-        client.user.username +
-        `\` has been successfully added to \`${guild.name}\``
-      }\n\n` +
-      `You can report any issues at my **[Support Server](${client.support})** following the needed steps. ` +
-      `You can also reach out to my **[Developers](${client.support})** if you want to know more about me.`;
-    let e = new client.embed()
-      .title(`Thank you for choosing ${client.user.username}!`)
-      .desc(desc);
-    try {
-      let owner = await client.users.fetch(guild.ownerId);
-      await owner
-        .send({
-          embeds: [e],
-          components: [
-            new ActionRowBuilder().addComponents(
-              new client.button().link(`Support Server`, `${client.support}`),
-              new client.button().link(`Get Premium`, `${client.support}`),
-            ),
-          ],
-        })
-        .catch(() => {});
-    } catch (e) {}
+            if (defaultChannel) {
+                const embedColor = client.color || client.config?.FUEGO?.COLOR || client.config?.EMBED_COLOR || "#3498db";
+                
+                // Assuming client.embed is your CustomEmbed class constructor
+                // Line 26 from your error was likely similar to this embed creation
+                const welcomeEmbed = new client.embed(embedColor)
+                    .setTitle(`Thanks for adding ${client.user.username}!`) // CORRECTED: .setTitle()
+                    .setDescription(
+                        `Hi there! I'm ${client.user.username}, your music companion.\n` +
+                        `My prefix is \`${client.prefix || client.config?.FUEGO?.PREFIX || "!"}\`. ` +
+                        `Type \`${client.prefix || client.config?.FUEGO?.PREFIX || "!"}help\` to see my commands.\n` +
+                        (client.support ? `If you need help, join our [Support Server](${client.support})!` : "")
+                    )
+                    .setThumbnail(client.user.displayAvatarURL())
+                    .setFooter({ text: `Currently in ${client.guilds.cache.size} servers!` });
 
-    await client.webhooks.server
-      .send({
-        username: client.user.username,
-        avatarURL: client.user.displayAvatarURL(),
-        embeds: [
-          new client.embed()
-            .desc(
-              `**Joined** ${guild.name} [ ${guild.id} ] [ ${guild.memberCount} ]`,
-            )
-            .setColor("#7ffa2d"),
-        ],
-      })
-      .catch(() => {});
-  },
+                await defaultChannel.send({ embeds: [welcomeEmbed] }).catch(e => {
+                    client.log(`Failed to send welcome message to ${guild.name}: ${e.message}`, "warn", "GuildEvents");
+                });
+            }
+
+            // Log to your server webhook if configured
+            if (client.webhooks && client.webhooks.server) {
+                const webhookEmbed = new client.embed(client.color || "#00FF00") // Use a distinct color
+                    .setTitle("Joined New Server")
+                    .addFields(
+                        { name: "Server Name", value: guild.name, inline: true },
+                        { name: "Server ID", value: guild.id, inline: true },
+                        { name: "Member Count", value: `${guild.memberCount}`, inline: true },
+                        { name: "Owner", value: `<@${guild.ownerId}> (ID: ${guild.ownerId})`, inline: true }
+                    )
+                    .setThumbnail(guild.iconURL())
+                    .setTimestamp();
+                client.webhooks.server.send({ embeds: [webhookEmbed] }).catch(e => client.log(`Webhook server log failed: ${e.message}`, "warn", "GuildEvents"));
+            }
+
+        } catch (error) {
+            if (client && typeof client.log === 'function') {
+                client.log(`Error in guildCreate event: ${error.message}`, "error", "GuildEvents");
+            }
+            console.error("guildCreate Error:", error);
+        }
+    }
 };
