@@ -16,7 +16,7 @@ module.exports = {
   description: "en/dis-able autoplay",
   args: false,
   vote: false,
-  new: true,
+  new: true, // Assuming this 'new' flag is for your own system
   admin: false,
   owner: false,
   botPerms: [],
@@ -27,101 +27,97 @@ module.exports = {
   sameVoiceChannel: true,
   execute: async (client, message, args, emoji) => {
     let player = await client.getPlayer(message.guild.id);
+    const embedColor = client.color || client.config?.FUEGO?.COLOR || client.config?.EMBED_COLOR || "#3d16ca";
 
     let data = player.data.get("autoplay");
 
     const row = new ActionRowBuilder().addComponents(
-      new client.button().success("enable", "Enable", "", data ? true : false),
-      new client.button().danger("disable", "Disable", "", data ? false : true),
+      new client.button().success("enable", "Enable", "", data ? true : false), // Disabled if already enabled
+      new client.button().danger("disable", "Disable", "", data ? false : true) // Disabled if already disabled
     );
+
+    const initialEmbed = new client.embed(embedColor); // Create instance
+    initialEmbed.desc( // Use your custom .desc() method
+      `${emoji.autoplay || '🔄'} **Choose autoplay-mode :**` // Added fallback emoji
+    );
+
     const m = await message
       .reply({
-        embeds: [
-          new client.embed().desc(
-            `${emoji.autoplay} **Choose autoplay-mode :**`,
-          ),
-        ],
+        embeds: [initialEmbed],
         components: [row],
       })
-      .catch(() => {});
+      .catch((e) => {client.log(`AutoplayCmd: Initial reply failed: ${e.message}`, "warn", "AutoplayCmd");});
+
+    if (!m) return;
 
     const filter = async (interaction) => {
       if (interaction.user.id === message.author.id) {
         return true;
       }
-      await interaction
-        .reply({
-          embeds: [
-            new client.embed().desc(
-              `${emoji.no} Only **${message.author.tag}** can use this`,
-            ),
-          ],
-          ephemeral: true,
-        })
-        .catch(() => {});
+      const permDenyEmbed = new client.embed(embedColor);
+      permDenyEmbed.desc(`${emoji.no} Only **${message.author.tag}** can use this`);
+      await interaction.reply({ embeds: [permDenyEmbed], ephemeral: true }).catch(() => {});
       return false;
     };
-    const collector = m?.createMessageComponentCollector({
+    const collector = m.createMessageComponentCollector({ // Removed optional chaining as 'm' is checked
       filter: filter,
       time: 60000,
-      idle: 30000 / 2,
+      idle: 30000, // Corrected: 30000 / 2 is 15000, if you meant 30s idle, use 30000
     });
 
-    collector?.on("collect", async (interaction) => {
-      if (!interaction.deferred) await interaction.deferUpdate();
+    collector.on("collect", async (interaction) => {
+      if (!interaction.isButton()) return; // Ensure it's a button
+      try {
+        if (!interaction.deferred) await interaction.deferUpdate();
+      } catch(e) { client.log(`AutoplayCmd: DeferUpdate failed: ${e.message}`, "warn", "AutoplayCmd"); return; }
+
+
+      let responseEmbed = new client.embed(embedColor); // Create instance for response
 
       if (interaction.customId == "enable") {
         player.data.set("autoplay", true);
-        let emb = new client.embed().desc(
-          `${emoji.on} **Autoplay is now \`Enabled\`**\n` +
-            `${emoji.bell} *Set by ${message.author.tag} - (New config)*`,
+        responseEmbed.desc( // Use .desc()
+          `${emoji.on || '✅'} **Autoplay is now \`Enabled\`**\n` +
+            `${emoji.bell || '🔔'} *Set by ${message.author.tag} - (New config)*`
         );
-        await require("@functions/updateEmbed.js")(client, player);
-        return await m.edit({ embeds: [emb], components: [] }).catch(() => {});
+        // await require("@functions/updateEmbed.js")(client, player); // Assuming this updates a main player embed
+      } else { // Assumed "disable"
+        player.data.set("autoplay", false);
+        responseEmbed.desc( // Use .desc()
+          `${emoji.off || '❌'} **Autoplay is now \`Disabled\`**\n` +
+            `${emoji.bell || '🔔'} *Set by ${message.author.tag} - (New config)*`
+        );
+        // await require("@functions/updateEmbed.js")(client, player);
+      }
+      
+      // Update embed after setting autoplay, if that function exists and is needed
+      if (typeof require("@functions/updateEmbed.js") === 'function') {
+          try {
+            await require("@functions/updateEmbed.js")(client, player);
+          } catch (updateEmbedError) {
+            client.log(`AutoplayCmd: Error calling updateEmbed.js: ${updateEmbedError.message}`, "warn", "AutoplayCmd");
+          }
       }
 
-      player.data.set("autoplay", false);
-      let emb = new client.embed().desc(
-        `${emoji.off} **Autoplay is now \`Disabled\`**\n` +
-          `${emoji.bell} *Set by ${message.author.tag} - (New config)*`,
-      );
-      await require("@functions/updateEmbed.js")(client, player);
-      return await m.edit({ embeds: [emb], components: [] }).catch(() => {});
+      await m.edit({ embeds: [responseEmbed], components: [] }).catch((e) => {client.log(`AutoplayCmd: Edit after selection failed: ${e.message}`, "warn", "AutoplayCmd");});
+      collector.stop("selection_made"); // Stop collector after action
     });
 
-    collector?.on("end", async (collected, reason) => {
-      if (collected.size == 0)
-        await m
-          .edit({
-            embeds: [
-              new client.embed().desc(
-                `${emoji.cool} **Timed out ! Falling back to existing profile**`,
-              ),
-            ],
-            components: [],
-          })
-          .then(async (fb) => {
-            player = await client.getPlayer(message.guild.id);
-            setTimeout(async () => {
-              await fb
-                .edit({
-                  embeds: [
-                    new client.embed().desc(
-                      `${
-                        player?.data.get("autoplay")
-                          ? `${emoji.on} **Autoplay set to \`Enabled\`**\n` +
-                            `${emoji.bell} *Timed out! Fell back to existing config*`
-                          : `${emoji.off} **Autoplay set to \`Disabled\`**\n` +
-                            `${emoji.bell} *Timed out! Fell back to existing config*`
-                      }`,
-                    ),
-                  ],
-                  components: [],
-                })
-                .catch(() => {});
-            }, 2000);
-          })
-          .catch(() => {});
+    collector.on("end", async (collected, reason) => {
+      if (reason !== "selection_made") { // Only edit if not already edited by successful selection
+        player = await client.getPlayer(message.guild.id); // Re-fetch player to get latest autoplay state
+        const timeoutEmbedDesc = player?.data.get("autoplay")
+            ? `${emoji.on || '✅'} **Autoplay remains \`Enabled\`**\n` +
+              `${emoji.bell || '🔔'} *Selection timed out! Fell back to existing config*`
+            : `${emoji.off || '❌'} **Autoplay remains \`Disabled\`**\n` +
+              `${emoji.bell || '🔔'} *Selection timed out! Fell back to existing config*`;
+        
+        const timeoutEmbed = new client.embed(embedColor);
+        timeoutEmbed.desc(timeoutEmbedDesc);
+        if (m && !m.deleted) { // Check if message m still exists
+            await m.edit({ embeds: [timeoutEmbed], components: [] }).catch(() => {});
+        }
+      }
     });
   },
 };
