@@ -3,17 +3,16 @@
 
 module.exports = {
     name: 'guildCreate',
-    async run(client, guild) { // Parameters may vary based on your event handler
+    async run(client, guild) { 
         try {
             client.log(`Joined a new guild: ${guild.name} (ID: ${guild.id}) with ${guild.memberCount} members.`, "event", "GuildEvents");
 
-            // Example: Send a message to a default channel or system channel
             let defaultChannel = null;
             if (guild.systemChannel && guild.systemChannel.permissionsFor(guild.members.me).has("SendMessages")) {
                 defaultChannel = guild.systemChannel;
             } else {
                 defaultChannel = guild.channels.cache.find(
-                    channel => channel.type === 0 && // 0 for GUILD_TEXT
+                    channel => channel.type === 0 && 
                                channel.permissionsFor(guild.members.me).has("SendMessages")
                 );
             }
@@ -21,10 +20,8 @@ module.exports = {
             if (defaultChannel) {
                 const embedColor = client.color || client.config?.FUEGO?.COLOR || client.config?.EMBED_COLOR || "#3498db";
                 
-                // Assuming client.embed is your CustomEmbed class constructor
-                // Line 26 from your error was likely similar to this embed creation
-                const welcomeEmbed = new client.embed(embedColor)
-                    .setTitle(`Thanks for adding ${client.user.username}!`) // CORRECTED: .setTitle()
+                const welcomeEmbed = new client.embed(embedColor) // Create instance
+                    .setTitle(`Thanks for adding ${client.user.username}!`) // CORRECTED
                     .setDescription(
                         `Hi there! I'm ${client.user.username}, your music companion.\n` +
                         `My prefix is \`${client.prefix || client.config?.FUEGO?.PREFIX || "!"}\`. ` +
@@ -39,10 +36,10 @@ module.exports = {
                 });
             }
 
-            // Log to your server webhook if configured
             if (client.webhooks && client.webhooks.server) {
-                const webhookEmbed = new client.embed(client.color || "#00FF00") // Use a distinct color
-                    .setTitle("Joined New Server")
+                const webhookEmbedColor = client.color || client.config?.EMBED_COLOR || "#00FF00"; // Use a distinct color or default
+                const webhookEmbed = new client.embed(webhookEmbedColor) 
+                    .setTitle("Joined New Server") // CORRECTED
                     .addFields(
                         { name: "Server Name", value: guild.name, inline: true },
                         { name: "Server ID", value: guild.id, inline: true },
