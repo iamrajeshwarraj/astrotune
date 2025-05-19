@@ -326,7 +326,7 @@ async function showLiveLyrics(
   if (!lyricsText) {
     const noLyricsEmbed = new EmbedBuilder()
       .setColor(config.embedColor || "#FF0000")
-      .setDescription("❌ **Lyrics not found for this track!**");
+      .setDescription(" <a:cross:1303637975292313633> **Lyrics not found for this track!**");
     channel.send({ embeds: [noLyricsEmbed] });
     return;
   }
