@@ -23,8 +23,8 @@ module.exports = {
   userPerms: [],
   player: true,
   queue: true,
-  inVoiceChannel: false, 
-  sameVoiceChannel: false, 
+  inVoiceChannel: true, 
+  sameVoiceChannel: true, 
   execute: async (client, message, args, emoji) => {
     const embedColor = client.color || client.config?.FUEGO?.COLOR || client.config?.EMBED_COLOR || "#3d16ca";
 
