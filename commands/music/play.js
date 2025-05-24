@@ -2,7 +2,6 @@
 /** @format */
 
 const yt =  /^(?:(?:(?:https?:)?\/\/)?(?:www\.)?)?(?:youtube\.com\/(?:[^\/\s]+\/\S+\/|(?:c|channel|user)\/\S+|embed\/\S+|watch\?(?=.*v=\S+)(?:\S+&)*v=\S+)|(?:youtu\.be\/\S+)|yt:\S+)$/i;
-// CORRECTED SPOTIFY REGEX:
 const sp = /^(?:https?:)?\/\/(?:open|play)\.spotify\.com\/(?:user\/\S+\/playlist\/\S+|playlist\/\S+|track\/\S+|album\/\S+|artist\/\S+)/i; 
 
 module.exports = {
@@ -11,7 +10,7 @@ module.exports = {
   cooldown: 3, 
   category: "music",
   usage: "<Spotify/YouTube URL or Song Name / file>",
-  description: "Plays a song or playlist. Uses Spotify for metadata if a text query is given.",
+  description: "Plays a song or playlist. Searches YouTube/YTM first, then tries to get Spotify metadata.",
   args: false, 
   player: false, 
   queue: false,  
@@ -25,12 +24,6 @@ module.exports = {
     const defaultColor = client.color || client.config?.FUEGO?.COLOR || client.config?.EMBED_COLOR || "#3d16ca";
     const errorColor = client.config?.ERROR_COLOR || "#FF0000"; 
     const successColor = client.config?.SUCCESS_COLOR || client.config.EMBED_COLOR || "#00FF00";
-
-    // For debugging the regex immediately
-    // client.log(`[PlayCmd-Input] Raw query: "${query}"`, "debug");
-    // client.log(`[PlayCmd-Input] sp.test(query) result: ${sp.test(query)}`, "debug");
-    // client.log(`[PlayCmd-Input] query.includes("playlist/") result: ${typeof query === 'string' && query.includes("playlist/")}`, "debug");
-
 
     if (!query && !file) { 
       const noQueryEmbed = new client.embed(defaultColor);
@@ -67,52 +60,60 @@ module.exports = {
     let searchResult;
     const searchOptions = { requester: message.author }; 
     let queryForLavalink = query; 
-    let spotifyMetadataForOverride = null; 
-    let isSpotifyLinkInput = sp.test(query); // This should now work correctly for playlists
+    let isSpotifyLinkInput = sp.test(query);
     let isYouTubeLinkInput = yt.test(query);
     let defaultSearchEngine = client.config.FUEGO?.DEFAULT_SEARCH_ENGINE || "ytmsearch";
-    let finalEngineForLavalink = null; 
+    let spotifyMetadataToApply = null; // To store metadata if found from Spotify later
 
-    if (isSpotifyLinkInput) { 
-        if (replyMessage) await replyMessage.edit({ embeds: [new client.embed(defaultColor).desc(`${emoji.search} Processing Spotify link...`)]}).catch(()=>{});
-    } else if (isYouTubeLinkInput || file) { 
-        if (replyMessage) await replyMessage.edit({ embeds: [new client.embed(defaultColor).desc(`${emoji.search} Processing link/file...`)]}).catch(()=>{});
-    } else { 
-        finalEngineForLavalink = "spotify"; 
-        if (replyMessage) await replyMessage.edit({ embeds: [new client.embed(defaultColor).desc(`${emoji.search} Searching Spotify for: **"${query}"**`)]}).catch(()=>{});
-        try {
-            const spotifyResults = await player.search(query, { ...searchOptions, engine: "spotify" }); 
-            if (spotifyResults && spotifyResults.tracks.length > 0) {
-                const firstSpotifyTrack = spotifyResults.tracks[0];
-                spotifyMetadataForOverride = { 
-                    title: firstSpotifyTrack.title,
-                    author: firstSpotifyTrack.author,
-                    duration: firstSpotifyTrack.length 
-                };
-                queryForLavalink = `${firstSpotifyTrack.author} - ${firstSpotifyTrack.title}`; 
-                finalEngineForLavalink = defaultSearchEngine; 
-                if (replyMessage) await replyMessage.edit({ embeds: [new client.embed(defaultColor).desc(`${emoji.search} Found on Spotify! Searching ${defaultSearchEngine} for: **"${queryForLavalink}"**`)]}).catch(()=>{});
-            } else {
-                if (replyMessage) await replyMessage.edit({ embeds: [new client.embed(defaultColor).desc(`${emoji.warn} Not found on Spotify. Searching ${defaultSearchEngine} for: **"${query}"**`)]}).catch(()=>{});
-                queryForLavalink = query; 
-                finalEngineForLavalink = defaultSearchEngine;
-            }
-        } catch (spotifyError) {
-            client.log(`Error searching Spotify for "${query}": ${spotifyError.message}. Using default engine.`, "warn", "PlayCmd-Execute");
-            if (replyMessage) await replyMessage.edit({ embeds: [new client.embed(defaultColor).desc(`${emoji.warn} Spotify search error. Searching ${defaultSearchEngine} for: **"${query}"**`)]}).catch(()=>{});
-            queryForLavalink = query;
-            finalEngineForLavalink = defaultSearchEngine;
+    if (isSpotifyLinkInput || isYouTubeLinkInput || file) { 
+        // For direct URLs or files, Kazagumo handles them directly
+        if (replyMessage) {
+            const processingEmbed = new client.embed(defaultColor);
+            processingEmbed.desc(`${emoji.search} Processing ${isSpotifyLinkInput ? "Spotify" : (isYouTubeLinkInput ? "YouTube" : "file")} link...`);
+            await replyMessage.edit({ embeds: [processingEmbed] }).catch(()=>{});
         }
-    }
-    
-    if(finalEngineForLavalink) {
-        searchOptions.engine = finalEngineForLavalink;
+        // No engine needs to be set in searchOptions for URLs/files; Kazagumo auto-detects.
+    } else { // It's a text query
+        if (replyMessage) await replyMessage.edit({ embeds: [new client.embed(defaultColor).desc(`${emoji.search} Searching ${defaultSearchEngine} for: **"${query}"**`)]}).catch(()=>{});
+        searchOptions.engine = defaultSearchEngine; // Search default engine first
+        // queryForLavalink is already the original query
     }
 
     try {
-        client.log(`Final search for Lavalink: Query="${queryForLavalink}", Engine="${searchOptions.engine || (isSpotifyLinkInput ? 'spotify_url_handler' : (isYouTubeLinkInput || file ? 'youtube_url_handler/file' : 'kazagumo_default'))}"`, "debug", "PlayCmd-Execute");
+        client.log(`Initial search for Lavalink: Query="${queryForLavalink}", Engine="${searchOptions.engine || 'Kazagumo Auto-Detect (URL/File)'}"`, "debug", "PlayCmd-Execute");
         searchResult = await player.search(queryForLavalink, searchOptions); 
-        client.log(`Result from player.search: Type=${searchResult?.type}, Tracks=${searchResult?.tracks?.length}, PlaylistName=${searchResult?.playlistName}`, "debug", "PlayCmd-Execute");
+        client.log(`Result from initial player.search: Type=${searchResult?.type}, Tracks=${searchResult?.tracks?.length}, PlaylistName=${searchResult?.playlistName}`, "debug", "PlayCmd-Execute");
+
+        // If it was a text query and we found something on YTM/YT, now try to get Spotify metadata for the first result
+        if (!isSpotifyLinkInput && !isYouTubeLinkInput && !file && searchResult && searchResult.tracks.length > 0) {
+            const firstPlayableTrack = searchResult.tracks[0];
+            const queryForSpotifyMeta = `${firstPlayableTrack.author} - ${firstPlayableTrack.title}`;
+            if (replyMessage) await replyMessage.edit({ embeds: [new client.embed(defaultColor).desc(`${emoji.search} Found: "${firstPlayableTrack.title.substring(0,30)}...". Checking Spotify for enhanced metadata...`)]}).catch(()=>{});
+            
+            try {
+                const spotifyMetaResults = await player.search(queryForSpotifyMeta, { requester: message.author, engine: "spotify" });
+                if (spotifyMetaResults && spotifyMetaResults.tracks.length > 0) {
+                    const spotifyTrack = spotifyMetaResults.tracks[0];
+                    // Compare durations roughly (e.g., within 10 seconds) to ensure it's likely the same song
+                    const durationDifference = Math.abs((firstPlayableTrack.length || 0) - (spotifyTrack.length || 0));
+                    if (durationDifference < 10000) { // Less than 10 seconds difference
+                        spotifyMetadataToApply = {
+                            title: spotifyTrack.title,
+                            author: spotifyTrack.author,
+                            duration: spotifyTrack.length,
+                            thumbnail: spotifyTrack.thumbnail 
+                        };
+                        client.log(`Found matching Spotify metadata for "${firstPlayableTrack.title}": "${spotifyTrack.title}"`, "info", "PlayCmd-Execute");
+                    } else {
+                        client.log(`Spotify result for "${queryForSpotifyMeta}" has significantly different duration. Original: ${firstPlayableTrack.length}, Spotify: ${spotifyTrack.length}. Not applying meta.`, "debug", "PlayCmd-Execute");
+                    }
+                } else {
+                    client.log(`No direct Spotify metadata match found for "${queryForSpotifyMeta}"`, "debug", "PlayCmd-Execute");
+                }
+            } catch (e) {
+                client.log(`Error searching Spotify for metadata for "${queryForSpotifyMeta}": ${e.message}`, "warn", "PlayCmd-Execute");
+            }
+        }
     } catch (e) {
         client.log(`Lavalink search failed for "${queryForLavalink}": ${e.message}`, "error", "PlayCmd-Execute");
         const errEmbedInstance = new client.embed(errorColor);
@@ -121,17 +122,6 @@ module.exports = {
         return message.channel.send({ embeds: [errEmbedInstance] }).catch(() => {});
     }
     
-    if (isSpotifyLinkInput && searchResult && searchResult.type === "PLAYLIST") {
-        client.log(`Spotify Playlist Link Resolved. Result Type: ${searchResult.type}, Playlist Name: ${searchResult.playlistName}, Tracks Resolved: ${searchResult.tracks.length}`, "debug", "PlayCmd-SpotifyDebug");
-        if (searchResult.tracks.length > 0) {
-            client.log(`--- First few Resolved Tracks from Spotify Playlist ---`, "debug", "PlayCmd-SpotifyDebug");
-            for (let i = 0; i < Math.min(5, searchResult.tracks.length); i++) {
-                const t = searchResult.tracks[i];
-                client.log(`  Track ${i+1}: Title: "${t.title}", Author: "${t.author}", URI: "${t.uri}", Source: ${t.sourceName}`, "debug", "PlayCmd-SpotifyDebug");
-            }
-        }
-    }
-
     const noResEmbedInstance = new client.embed(defaultColor);
     noResEmbedInstance.desc(`${emoji.no} **No results found for your query.**`);
     if (!searchResult || searchResult.tracks.length === 0) {
@@ -144,33 +134,37 @@ module.exports = {
     let firstTrackTitleForMessage = null; 
     let firstTrackUriForMessage = "#";
 
-    const addTrackWithPotentialSpotifyMeta = (track, isOriginalQuerySpotifyURL = false, predefinedSpotifyMeta = null) => {
-        let metaToUse = predefinedSpotifyMeta; 
-        if (!metaToUse && isOriginalQuerySpotifyURL) { 
-            metaToUse = { title: track.title, author: track.author, duration: track.length };
+    const addTrackWithEnhancedMeta = (track, predefinedSpotifyMeta = null) => {
+        track.requester = message.author; // Always set requester
+        track.userData = { 
+            ...track.userData, 
+            requesterId: message.author.id,
+            requesterTag: message.author.tag
+        };
+        if (predefinedSpotifyMeta) { // This comes from our text search flow
+            track.userData.spotifyTitle = predefinedSpotifyMeta.title;
+            track.userData.spotifyAuthor = predefinedSpotifyMeta.author;
+            track.userData.spotifyDuration = predefinedSpotifyMeta.duration;
+            if (predefinedSpotifyMeta.thumbnail && !track.thumbnail) track.thumbnail = predefinedSpotifyMeta.thumbnail;
+        } else if (isSpotifyLinkInput) { // If original query was a Spotify link, Kazagumo might have put meta on track directly
+             track.userData.spotifyTitle = track.title;
+             track.userData.spotifyAuthor = track.author;
+             track.userData.spotifyDuration = track.length;
         }
-        if (metaToUse) {
-            track.userData = { 
-                ...track.userData, 
-                spotifyTitle: metaToUse.title, spotifyAuthor: metaToUse.author, spotifyDuration: metaToUse.duration,
-                resolvedUri: track.uri, resolvedTitle: track.title, resolvedAuthor: track.author
-            };
-        }
+        // For display, prioritize Spotify title if available
+        const displayTitle = track.userData?.spotifyTitle || track.title;
         player.queue.add(track);
+        return displayTitle;
     };
 
     if (searchResult.type === "PLAYLIST") {
-        client.log(`Adding playlist: "${searchResult.playlistName}", tracks provided: ${tracks.length}. Original query was Spotify URL: ${isSpotifyLinkInput}`, "info", "PlayCmd-Execute");
+        client.log(`Adding playlist: "${searchResult.playlistName}", tracks provided: ${tracks.length}. Original query: "${query}" (Spotify URL: ${isSpotifyLinkInput})`, "info", "PlayCmd-Execute");
         for (const track of tracks) { 
-            client.log(`Processing playlist track: ${track.title} (URI: ${track.uri}, Length: ${track.length})`, "debug", "PlayCmd-Execute");
-            if (track.length < 10000 && !track.isStream) { 
-                client.log(`Skipping short track: ${track.title}`, "debug", "PlayCmd-Execute");
-                continue; 
-            }
-            addTrackWithPotentialSpotifyMeta(track, isSpotifyLinkInput, null); 
+            if (track.length < 10000 && !track.isStream) { continue; }
+            const addedTitle = addTrackWithEnhancedMeta(track, isSpotifyLinkInput, null); // For playlists from Spotify URL, meta should be on track
             if (actuallyAddedCount === 0) { 
-                firstTrackTitleForMessage = track.userData?.spotifyTitle || track.title;
-                firstTrackUriForMessage = track.userData?.resolvedUri || track.uri; 
+                firstTrackTitleForMessage = addedTitle;
+                firstTrackUriForMessage = track.uri; 
             }
             actuallyAddedCount++;
         }
@@ -188,9 +182,8 @@ module.exports = {
             if (replyMessage) return replyMessage.edit({ embeds: [shortTrackEmbedInstance] }).catch(() => {});
             return message.channel.send({ embeds: [shortTrackEmbedInstance] }).catch(() => {});
         }
-        addTrackWithPotentialSpotifyMeta(trackToAdd, isSpotifyLinkInput, spotifyMetadataForOverride); 
-        firstTrackTitleForMessage = trackToAdd.userData?.spotifyTitle || trackToAdd.title;
-        firstTrackUriForMessage = trackToAdd.userData?.resolvedUri || trackToAdd.uri;
+        firstTrackTitleForMessage = addTrackWithEnhancedMeta(trackToAdd, isSpotifyLinkInput, spotifyMetadataToApply); 
+        firstTrackUriForMessage = trackToAdd.uri;
         actuallyAddedCount++;
         client.log(`Added single track: "${firstTrackTitleForMessage}" (Lavalink URI: ${trackToAdd.uri})`, "info", "PlayCmd-Execute");
     } else { 
