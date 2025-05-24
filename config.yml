@@ -8,13 +8,13 @@ LINKS:
   MONGO_URI: "mongodb+srv://rajeshwarrajbly20:randidadhabha@cluster0.cbs91jy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 SPOTIFY: # As read by options.js
-  ID: "8df7bdf3ea154a66bdb788d8b97c60d3"    # Your actual Spotify Client ID
-  Secret: "2b67bd50edcd4ab69fba1524a1cc8918" # Your actual Spotify Client Secret (Note: Capital 'S')
+  ID: "28f83a6fba8b4faf91b55517d450bc91"    # Your actual Spotify Client ID
+  Secret: "7cc1f33fee2b4bec9fafc7532eed6493" # Your actual Spotify Client Secret (Note: Capital 'S')
   # SEARCHMARKET: "IN" # Optional
 
 FUEGO: # Settings for your Fuego client
   CLIENT_NAME: "FuegoBot" # Optional: For logging context
-  TOKEN: "MTM3MzI0MzIzNTA2NTEzNTEyNA.GYftNC.YI5w832f9ggZUq1_qw90dgZNF6TyS-VXuvKzqo" # IMPORTANT
+  TOKEN: "MTM3NTg2NTc1NTcxMDc4NzY3NA.G-Reu8.YZMrYtaWpekDkNUufBiMbOTkamoWalC5YWoTh4" # IMPORTANT
   PREFIX: "!"
   EMOJIS: "black" # Or your emoji object key if emoji.js is complex
   COLOR: "#3d16ca"
@@ -29,7 +29,7 @@ FUEGO: # Settings for your Fuego client
 
 MANAGER: # If you have a separate Manager bot defined in YML (not currently used by sharder example)
   OWNER: "1297443880576225312"
-  TOKEN: "MTM3MzI0MzIzNTA2NTEzNTEyNA.GYftNC.YI5w832f9ggZUq1_qw90dgZNF6TyS-VXuvKzqo"
+  TOKEN: "MTM3NTg2NTc1NTcxMDc4NzY3NA.G-Reu8.YZMrYtaWpekDkNUufBiMbOTkamoWalC5YWoTh4"
 
 WEBHOOKS:
   ERROR: "https://discord.com/api/webhooks/1308424637142536262/H__6pJ9JOPAuxdQuBfN-UJOjJ1eVKcfqnHUlpkk0VNQvC5EFVmhk-VbmOxsHlUropLnt"
