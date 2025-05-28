@@ -22,8 +22,8 @@ module.exports = (client) => {
   let lavalinkNodes = [ // Default fallback node
     {
         name: 'AstroTune-Default', 
-        url: 'lavahatry4.techbyte.host:3000', // Ensure this is your primary, working node
-        auth: 'NAIGLAVA-dash.techbyte.host',
+        url: 'localhost:2444', // Ensure this is your primary, working node
+        auth: 'astrotune',
         secure: false,
       },
   ];

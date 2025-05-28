@@ -40,8 +40,8 @@ WEBHOOKS:
 
 NODES:
   - name: "AstroTune"
-    url: "lavahatry4.techbyte.host:3000"
-    auth: "NAIGLAVA-dash.techbyte.host"
+    url: "localhost:2444"
+    auth: "astrotune"
     secure: false
   # - name: "MyLocalLava" # Example for local testing
   #   url: "localhost:2333" 
