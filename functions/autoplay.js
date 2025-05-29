@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 module.exports = autoplay = async (client, player, channel) => {
   let res = null;
   let cureentTrack = player.data.get("autoplaySystem");

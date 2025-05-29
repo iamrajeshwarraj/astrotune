@@ -1,11 +1,4 @@
 // commands/filter/equalizer.js
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 const genGraph = require("@gen/eqGraph.js"); 
 const { ActionRowBuilder, ButtonStyle, StringSelectMenuBuilder, EmbedBuilder } = require("discord.js"); // ButtonBuilder itself is not used if client.button() is your factory
 

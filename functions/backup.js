@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 const { AttachmentBuilder } = require("discord.js");
 
 module.exports = async (file, channel, time) => {

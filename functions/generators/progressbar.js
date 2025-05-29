@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 module.exports = progressBar = (player, size = 15) => {
   const redLine = "<:arlines_PO:1334987360890261606>";
   const whiteLine = "<:DB_dashblue:1334988877911556217>";

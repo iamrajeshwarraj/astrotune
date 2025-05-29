@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 const { ButtonStyle, ButtonBuilder } = require("discord.js");
 
 module.exports = class button extends ButtonBuilder {

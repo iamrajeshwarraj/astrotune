@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 module.exports = async (message, command, client = message.client) => {
   // Validate ViewChannel and ReadMessageHistory permissions first
   if (

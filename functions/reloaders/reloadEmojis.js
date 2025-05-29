@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 module.exports = async (client) => {
   let emojiFile = Object.keys(require.cache).filter(
     (f) => f.includes("emoji") && !f.includes("node_modules"),

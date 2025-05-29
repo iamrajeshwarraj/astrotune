@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 const genGraph = require("@gen/pingGraph.js");
 const { ActionRowBuilder } = require("discord.js"); // StringSelectMenuBuilder not used here
 

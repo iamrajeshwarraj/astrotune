@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 const QuickChart = require("quickchart-js");
 const qc = new QuickChart();
 const gen = (wsl, msg) => {

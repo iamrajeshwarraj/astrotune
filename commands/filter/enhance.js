@@ -1,11 +1,4 @@
 // commands/filter/enhance.js
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 module.exports = {
   name: "enhance",
   aliases: [],

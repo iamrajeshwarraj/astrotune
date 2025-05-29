@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 const { AttachmentBuilder } = require("discord.js");
 const genButtons = require("@gen/playerButtons.js"); 
 const { createCanvas, loadImage, registerFont } = require("canvas");

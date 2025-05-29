@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 module.exports = async (client, category) => {
   let commands = await client.commands
     .filter((x) => x.category && x.category === category)

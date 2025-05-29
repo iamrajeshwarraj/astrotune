@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 module.exports = (ctx, x, y, width, height, radius) => {
   radius = { tl: radius, tr: radius, br: radius, bl: radius };
   ctx.beginPath();

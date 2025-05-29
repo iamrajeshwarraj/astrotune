@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 const app = require("express")();
 const port = process.env.PORT || 443;
 const logger = require("@plugins/logger");

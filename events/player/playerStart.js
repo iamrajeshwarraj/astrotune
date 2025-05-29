@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 const { RateLimitManager } = require("@sapphire/ratelimits");
 const adCooldownManager = new RateLimitManager(600000); // 10 minutes
 const { VibeSync } = require('vibesync'); 

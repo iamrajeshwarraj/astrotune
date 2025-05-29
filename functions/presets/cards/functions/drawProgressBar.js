@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 const roundRect = require("./roundedRect.js");
 
 module.exports = (ctx, bar) => {

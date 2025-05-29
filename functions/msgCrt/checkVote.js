@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 module.exports = async (message, command, client = message.client) => {
   if (!client.vote || !client.topGgAuth) return false;
   let voted = false;

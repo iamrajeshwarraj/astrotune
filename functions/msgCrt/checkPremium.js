@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 module.exports = async (message, client = message.client) => {
   let [premiumUser, premiumGuild] = await Promise.all([
     await client.db.premium.get(`${client.user.id}_${message.author.id}`),

@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 const genButtons = require("@gen/playerButtons.js");
 module.exports = async (data, client, player) => {
   /*

@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 module.exports = async (gains) => {
   const QuickChart = require("quickchart-js");
   const qc = new QuickChart();

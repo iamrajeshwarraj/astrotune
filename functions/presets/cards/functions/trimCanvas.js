@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 module.exports = (x, y, rad, canvas, ctx) => {
   let width = canvas.width - 2 * x;
   let height = canvas.height - 2 * y;

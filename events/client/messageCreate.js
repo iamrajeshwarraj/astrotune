@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 Aero-Services
- */
-
 const { RateLimitManager } = require("@sapphire/ratelimits");
 const spamRateLimitManager = new RateLimitManager(10000, 7);
 const cooldownRateLimitManager = new RateLimitManager(5000);

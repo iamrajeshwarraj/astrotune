@@ -1,16 +1,9 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 1sT-Services
- */
-
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, PermissionsBitField } = require("discord.js");
 
 module.exports = {
   name: "servertour",
   aliases: [],
-  cooldown: "",
+  cooldown: "30",
   category: "owner",
   usage: "<@user>",
   description:
@@ -28,19 +21,19 @@ module.exports = {
   sameVoiceChannel: false,
   execute: async (client, message, args, emoji = {}) => {
     // Define your custom emojis
-    const warningEmoji = emoji.warning || "<:warn:1272040411598164070>";
-    const noEmoji = emoji.no || "<:nwrong:1272036067327082530>";
-    const yesEmoji = emoji.yes || "<:tick_icon:1272041968842833962>";
+    const warningEmoji = emoji.warning || "<a:delete:1304402508462034995>";
+    const noEmoji = emoji.no || "<a:cross:1303637975292313633>";
+    const yesEmoji = emoji.yes || "<a:tick:1303637744983216232>";
 
     // Only bot owners can use this command
-    const botOwnerID = "1296592612114960415"; // Replace with your actual bot owner ID
-    if (message.author.id !== botOwnerID) {
-      return message.reply({
-        embeds: [
-          new client.embed().desc(`${noEmoji} **You are not authorized to use this command.**`),
-        ],
-      });
-    }
+    // const botOwnerID = "1296592612114960415"; // Replace with your actual bot owner ID
+    // if (message.author.id !== botOwnerID) {
+    //   return message.reply({
+    //     embeds: [
+    //       new client.embed().desc(`${noEmoji} **You are not authorized to use this command.**`),
+    //     ],
+    //   });
+    // }
 
     const targetUser =
       message.mentions.members.first() || message.guild.members.cache.get(args[0]);

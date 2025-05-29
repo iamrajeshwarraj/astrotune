@@ -1,10 +1,3 @@
-/** @format
- *
- * Fuego By Painfuego
- * Version: 6.0.0-beta
- * © 2024 1sT-Services
- */
-
 module.exports = {
   name: "serverinvite",
   aliases: [],
@@ -32,14 +25,14 @@ module.exports = {
     const warningEmoji = emoji.warning || "<:warn:1272040411598164070>";
 
     // Only bot owners can use this command
-    const botOwnerID = "940959891005243442"; // Replace with your actual bot owner ID
-    if (message.author.id !== botOwnerID) {
-      return message.reply({
-        embeds: [
-          new client.embed().desc(`${crossEmoji} **You are not authorized to use this command.**`),
-        ],
-      });
-    }
+    // const botOwnerID = "940959891005243442"; // Replace with your actual bot owner ID
+    // if (message.author.id !== botOwnerID) {
+    //   return message.reply({
+    //     embeds: [
+    //       new client.embed().desc(`${crossEmoji} **You are not authorized to use this command.**`),
+    //     ],
+    //   });
+    // }
 
     // Check if server ID is provided
     if (!serverID) {
