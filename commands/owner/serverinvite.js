@@ -20,19 +20,19 @@ module.exports = {
     const serverID = args[0];
 
     // Define emojis
-    const tickEmoji = emoji.tick || "<:tick_icon:1272041968842833962>";
-    const crossEmoji = emoji.cross || "<:nwrong:1272036067327082530>";
-    const warningEmoji = emoji.warning || "<:warn:1272040411598164070>";
+    const tickEmoji = emoji.tick || "<a:tick:1303637744983216232>";
+    const crossEmoji = emoji.cross || "<a:cross:1303637975292313633>";
+    const warningEmoji = emoji.warning || "<a:delete:1304402508462034995>";
 
     // Only bot owners can use this command
-    // const botOwnerID = "940959891005243442"; // Replace with your actual bot owner ID
-    // if (message.author.id !== botOwnerID) {
-    //   return message.reply({
-    //     embeds: [
-    //       new client.embed().desc(`${crossEmoji} **You are not authorized to use this command.**`),
-    //     ],
-    //   });
-    // }
+    const botOwnerID = "1296592612114960415"; // Replace with your actual bot owner ID
+    if (message.author.id !== botOwnerID) {
+      return message.reply({
+        embeds: [
+          new client.embed().desc(`${crossEmoji} **You are not authorized to use this command.**`),
+        ],
+      });
+    }
 
     // Check if server ID is provided
     if (!serverID) {
